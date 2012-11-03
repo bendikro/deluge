@@ -328,7 +328,7 @@ class TorrentView(listview.ListView, component.Component):
         # Update the view right away with our status
         self.status = state
         self.set_columns_to_update()
-        self.update_view(first_run=True)
+        self.update_view(load_new_list=True)
 
     def stop(self):
         """Stops the torrentview"""
@@ -403,43 +403,38 @@ class TorrentView(listview.ListView, component.Component):
             # Send a status request
             gobject.idle_add(self.send_status_request)
 
-
-    def update_view(self, first_run=False):
-        """Update the view."""
+    def update_view(self, load_new_list=False):
+        """Update the torrent view model with data we've received."""
         filter_column = self.columns["filter"].column_indices[0]
         status = self.status
-        sort_settings =  (None, None)
-        model = self.treeview.get_model()
 
-        self.treeview.freeze_child_notify()
+        if not load_new_list:
+            # Freeze notications while updating
+            self.treeview.freeze_child_notify()
 
-        if first_run:
-            # Disable sort if it's the first run.
-            sort_settings =  model.get_sort_column_id()
-            model.set_sort_column_id(-1, gtk.SORT_ASCENDING)
-
-        # Create a list of tuples with the index of the column, and the column name
+        # Get the columns to update from one of the torrents
+        torrent_id = status.keys()[0]
         fields_to_update = []
         for column in self.columns_to_update:
             column_index = self.get_column_index(column)
             for i, status_field in enumerate(self.columns[column].status_field):
-                fields_to_update.append((column_index[i], status_field))
+                # Only use columns that the torrent has in the state
+                if status_field in status[torrent_id]:
+                    fields_to_update.append((column_index[i], status_field))
 
         for row in self.liststore:
             torrent_id = row[self.columns["torrent_id"].column_indices[0]]
-            # Do not test if the torrent_id is in status. Instead
-            # we expect the torrent_id to be in status and prev_status,
+            # We expect the torrent_id to be in status and prev_status,
             # as it will be as long as the list isn't changed by the user
+
             torrent_id_in_status = False
             try:
                 torrent_status = status[torrent_id]
                 torrent_id_in_status = True
                 if torrent_status == self.prev_status[torrent_id]:
-                    if row[filter_column] is False:
-                        row[filter_column] = True
-                    # The status dict is the same, so do not update this torrent
+                    # The status dict is the same, so do nothing to update for this torrent
                     continue
-            except KeyError:
+            except KeyError, e:
                 pass
 
             if not torrent_id_in_status:
@@ -448,31 +443,24 @@ class TorrentView(listview.ListView, component.Component):
             else:
                 if row[filter_column] is False:
                     row[filter_column] = True
+
+                # Find the fields to update
                 to_update = []
-                # Add all the values that have changed to the list
                 for i, status_field in fields_to_update:
-                    try:
-                        if not status[torrent_id].has_key(status_field):
-                            continue
-                        row_value = status[torrent_id][status_field]
-                        if row[i] != row_value:
-                            to_update.append(i)
-                            to_update.append(row_value)
-                    except KeyError, e:
-                        # if status_field in status[torrent_id] -> False
-                        field_value_key_error_count += 1
-                        pass
-                    except Exception, e:
-                        log.debug("%s", e)
-                # Update all the changed values of the row
+                    row_value = status[torrent_id][status_field]
+                    if row[i] != row_value:
+                        to_update.append(i)
+                        to_update.append(row_value)
+                # Update fields in the liststore
                 if to_update:
                     self.liststore.set(row.iter, *to_update)
 
-        if sort_settings[0] is not None:
-            # Reenable sorting
-            model.set_sort_column_id(*sort_settings)
+        if load_new_list:
+            # Create the model filter. This sets the model for the treeview and enables sorting.
+            self.create_model_filter()
+        else:
+            self.treeview.thaw_child_notify()
 
-        self.treeview.thaw_child_notify()
         component.get("MenuBar").update_menu()
         self.prev_status = status
 
@@ -507,10 +495,11 @@ class TorrentView(listview.ListView, component.Component):
         """Adds all the torrents from state to self.liststore"""
         torrent_id_column = self.columns["torrent_id"].column_indices[0]
         dirty_column = self.columns["dirty"].column_indices[0]
+        filter_column = self.columns["filter"].column_indices[0]
         for i, torrent_id in enumerate(state):
             # Insert a new row to the liststore
             row = self.liststore.append()
-            self.liststore.set(row, torrent_id_column, torrent_id, dirty_column, True)
+            self.liststore.set(row, torrent_id_column, torrent_id, dirty_column, True, filter_column, True)
 
     def remove_row(self, torrent_id):
         """Removes a row with torrent_id"""

@@ -413,14 +413,15 @@ class TorrentView(listview.ListView, component.Component):
             self.treeview.freeze_child_notify()
 
         # Get the columns to update from one of the torrents
-        torrent_id = status.keys()[0]
-        fields_to_update = []
-        for column in self.columns_to_update:
-            column_index = self.get_column_index(column)
-            for i, status_field in enumerate(self.columns[column].status_field):
-                # Only use columns that the torrent has in the state
-                if status_field in status[torrent_id]:
-                    fields_to_update.append((column_index[i], status_field))
+        if status:
+            torrent_id = status.keys()[0]
+            fields_to_update = []
+            for column in self.columns_to_update:
+                column_index = self.get_column_index(column)
+                for i, status_field in enumerate(self.columns[column].status_field):
+                    # Only use columns that the torrent has in the state
+                    if status_field in status[torrent_id]:
+                        fields_to_update.append((column_index[i], status_field))
 
         for row in self.liststore:
             torrent_id = row[self.columns["torrent_id"].column_indices[0]]

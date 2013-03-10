@@ -118,6 +118,30 @@ class AddTorrentDialog(component.Component):
         self.listview_files.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
         self.listview_torrents.get_selection().connect("changed", self._on_torrent_changed)
 
+        # Setup popop in torrent list to copy text to clipboard
+        self.torrentlist_popup_menu = gtk.Menu()
+        menuitem_copy_title = gtk.MenuItem("Copy title to clipboard")
+        menuitem_copy_title.connect("activate", self.on_button_copy_title_to_clipboard)
+        self.torrentlist_popup_menu.append(menuitem_copy_title)
+        self.listview_torrents.connect('button-press-event', self.handle_mouse_right_click_popup,
+                                       self.torrentlist_popup_menu)
+
+        # Setup popop in files list to normalize names and create directory
+        menuitem_normalize_name = gtk.MenuItem("Normalize file name")
+        menuitem_normalize_name.connect("activate", self.on_button_normalize_filenames)
+        menuitem_create_root_dir = gtk.MenuItem("Place all items in a root directory")
+        menuitem_create_root_dir.connect("activate", self.create_root_directory)
+        self.fileslist_single_select_popup = gtk.Menu()
+        self.fileslist_single_select_popup.append(menuitem_normalize_name)
+        self.fileslist_single_select_popup.append(menuitem_create_root_dir)
+
+        menuitem_normalize_names = gtk.MenuItem("Normalize file names")
+        menuitem_normalize_names.connect("activate", self.on_button_normalize_filenames)
+        self.fileslist_multi_select_popup = gtk.Menu()
+        self.fileslist_multi_select_popup.append(menuitem_normalize_names)
+        self.listview_files.connect('button-press-event', self.handle_mouse_right_click_popup,
+                                    (self.fileslist_single_select_popup, self.fileslist_multi_select_popup))
+
         self.setup_move_completed_path_chooser()
         self.setup_download_location_path_chooser()
 
@@ -910,3 +934,107 @@ class AddTorrentDialog(component.Component):
             # Walk through the tree from 'itr' and add all the new file paths
             # to the 'mapped_files' option
             walk_tree(itr)
+
+    def _on_alocation_toggled(self, widget):
+        full_allocation_active = self.builder.get_object("radio_full").get_active()
+        self.builder.get_object("chk_prioritize").set_sensitive(full_allocation_active)
+        self.builder.get_object("chk_sequential_download").set_sensitive(full_allocation_active)
+
+    def handle_mouse_right_click_popup(self, treeview, event, callback_data=None):
+        """Shows popup on selected row when right clicking"""
+        if event.button == 3:
+            if callback_data is None:
+                return False
+            popupmenu_single_selection = callback_data
+            popupmenu_multi_selection = None
+            if type(callback_data) is tuple:
+                popupmenu_single_selection, popupmenu_multi_selection = callback_data
+            x = int(event.x)
+            y = int(event.y)
+            time = event.time
+            pthinfo = treeview.get_path_at_pos(x, y)
+            model = treeview.get_model()
+            it = model.get_iter(pthinfo[0])
+            link = model.get_value(it, 0)
+            if link is None:
+                return False
+            if pthinfo is not None:
+                path, col, cellx, celly = pthinfo
+                treeview.grab_focus()
+                # If file is not selected, mark selected
+                if not treeview.get_selection().iter_is_selected(it):
+                    treeview.get_selection().select_iter(it)
+                if popupmenu_multi_selection is not None and treeview.get_selection().count_selected_rows() > 1:
+                    popupmenu_multi_selection.popup(None, None, None, event.button, time, data=path)
+                    popupmenu_multi_selection.show_all()
+                else:
+                    popupmenu_single_selection.popup(None, None, None, event.button, time, data=path)
+                    popupmenu_single_selection.show_all()
+            return True
+
+    def get_value_in_selected_row(self, treeview, store, column_index=0):
+        """Helper to get the value at index 'index_column' of the selected element
+        in the given treeview.
+        return None of no item is selected.
+        """
+        tree, tree_id = treeview.get_selection().get_selected()
+        if tree_id:
+            value = store.get_value(tree_id, column_index)
+            return value
+        return None
+
+    def on_button_copy_title_to_clipboard(self, menuitem):
+        torrent_title = self.get_value_in_selected_row(self.listview_torrents,
+                                                  self.torrent_liststore,
+                                                  column_index=1)
+        if torrent_title is not None:
+            gtk.clipboard_get().set_text(torrent_title)
+
+    def normalize_filename(self, filename):
+        import re
+        # For sound e.g. 7.1
+        filename = re.sub(" - ", "-", filename)
+        filename = re.sub(" (\d)\.(\d) ", "-\g<1>.\g<2>-", filename)
+        # If last in name
+        filename = re.sub(" (\d)\.(\d)", "-\g<1>.\g<2>", filename)
+        # For existing punctuation with a following space
+        filename = re.sub("\. ", ".-", filename)
+        # Replace all space with punctuation
+        filename = re.sub(" ", ".", filename)
+        return filename
+
+    def on_button_normalize_filenames(self, menuitem):
+        tree, tree_paths = self.listview_files.get_selection().get_selected_rows()
+        for path in tree_paths:
+            it = self.files_treestore.get_iter(path)
+            value = self.files_treestore.get_value(it, 1)
+            normalized = self.normalize_filename(value)
+            self._on_filename_edited(None, path, normalized)
+
+    def create_root_directory(self, menuitem):
+        # Should only be one selected row
+        tree, tree_paths = self.listview_files.get_selection().get_selected_rows()
+        # Find the name of the root directory
+        for path in tree_paths:
+            it = self.files_treestore.get_iter(path)
+            name_of_file = self.files_treestore.get_value(it, 1)
+            # Remove extensions
+            directory_name, ext = os.path.splitext(name_of_file)
+            if len(ext) > 4:
+                directory_name = name_of_file
+            break
+        # Go through all root children
+        while True:
+            it = self.listview_files.get_model().get_iter_first()
+            # Find the first child that isnt't the new directory
+            while it:
+                filename = self.files_treestore.get_value(it, 1)
+                if filename.strip(os.path.sep) != directory_name.strip(os.path.sep):
+                    break
+                it = self.listview_files.get_model().iter_next(it)
+            # No more children, we are done
+            if it == None:
+                break
+            new_name = directory_name + os.path.sep + filename
+            self._on_filename_edited(None, self.listview_files.get_model().get_path(it), new_name)
+        self.listview_files.expand_row("0", True)

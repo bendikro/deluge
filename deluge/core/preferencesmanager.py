@@ -90,6 +90,9 @@ DEFAULT_PREFS = {
     "max_active_seeding": 5,
     "max_active_downloading": 3,
     "max_active_limit": 8,
+    "max_active_dht_limit": -1,
+    "max_active_tracker_limit": -1,
+    "max_active_lsd_limit": -1,
     "dont_count_slow_torrents": False,
     "queue_new_to_top": False,
     "stop_seed_at_ratio": False,
@@ -193,6 +196,31 @@ class PreferencesManager(component.Component):
     def _on_config_value_change(self, key, value):
         self.do_config_set_func(key, value)
         component.get("EventManager").emit(ConfigValueChangedEvent(key, value))
+
+    def _on_set_max_active_dht_limit(self, key, value):
+        log.debug("%s set to %s..", key, value)
+        # libtorrent does not accept -1 for active_dht_limit,
+        # so max(32-bit signed int) is passed for unlimited
+        if (value == -1):
+            value = 5000
+        self.session_set_setting("active_dht_limit", value)
+
+    def _on_set_max_active_tracker_limit(self, key, value):
+        log.debug("%s set to %s..", key, value)
+        # libtorrent does not accept -1 for active_tracker_limit,
+        # so max(32-bit signed int) is passed for unlimited
+        if (value == -1):
+            value = 5000
+        print "Setting max tracker limit:", value
+        self.session_set_setting("active_tracker_limit", value)
+
+    def _on_set_max_active_lsd_limit(self, key, value):
+        log.debug("%s set to %s..", key, value)
+        # libtorrent does not accept -1 for active_lsd_limit,
+        # so max(32-bit signed int) is passed for unlimited
+        if (value == -1):
+            value = 5000
+        self.session_set_setting("active_lsd_limit", value)
 
     def _on_set_torrentfiles_location(self, key, value):
         if self.config["copy_torrent_file"]:

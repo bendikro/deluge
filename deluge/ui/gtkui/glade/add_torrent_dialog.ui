@@ -71,6 +71,7 @@
                                 <property name="height_request">100</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
+                                <property name="tooltip_text" translatable="yes">Double click to copy title to clipboard</property>
                                 <property name="headers_visible">False</property>
                               </object>
                             </child>

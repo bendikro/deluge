@@ -146,6 +146,9 @@ class AddTorrentDialog(component.Component):
         self.listview_torrents.get_selection().connect("changed",
                                     self._on_torrent_changed)
 
+        # Add mouse listener to copy title to clipboard
+        self.listview_torrents.connect('button-press-event', self._on_mouse_button_press_event)
+
         self.setup_move_completed_path_chooser()
         self.setup_download_location_path_chooser()
 
@@ -966,3 +969,27 @@ class AddTorrentDialog(component.Component):
         full_allocation_active = self.builder.get_object("radio_full").get_active()
         self.builder.get_object("chk_prioritize").set_sensitive(full_allocation_active)
         self.builder.get_object("chk_sequential_download").set_sensitive(full_allocation_active)
+
+    def _on_mouse_button_press_event(self, treeview, event):
+        """ Shows popup on selected row when right clicking """
+        if event.type == gtk.gdk._2BUTTON_PRESS:
+            torrent_title = self.get_value_in_selected_row(self.listview_torrents,
+                                                           self.torrent_liststore,
+                                                           column_index=1)
+            if torrent_title is not None:
+                gtk.clipboard_get().set_text(torrent_title)
+                self.tooltips = gtk.Tooltips()
+                self.tooltips.set_tip(self.listview_torrents, "%s copied to clipboard" % torrent_title)
+            return True
+
+    def get_value_in_selected_row(self, treeview, store, column_index=0):
+        """
+        Helper to get the value at index 'index_column' of the selected element
+        in the given treeview.
+        return None of no item is selected.
+        """
+        tree, tree_id = treeview.get_selection().get_selected()
+        if tree_id:
+            value = store.get_value(tree_id, column_index)
+            return value
+        return None

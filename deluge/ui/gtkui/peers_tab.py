@@ -41,7 +41,8 @@ from itertools import izip
 from deluge.ui.client import client
 import deluge.component as component
 import deluge.common
-from deluge.ui.gtkui.torrentview_data_funcs import cell_data_speed_down, cell_data_speed_up
+from deluge.ui.gtkui.torrentview_data_funcs import cell_data_speed
+from deluge.ui.gtkui.listview import TreeviewColumnBase
 from deluge.ui.gtkui.torrentdetails import Tab
 from deluge.ui.countries import COUNTRIES
 from deluge.ui.gtkui.common import save_pickled_state_file, load_pickled_state_file
@@ -81,7 +82,7 @@ class PeersTab(Tab):
         self.peers = {}
 
         # Country column
-        column = gtk.TreeViewColumn()
+        column = TreeviewColumnBase()
         render = gtk.CellRendererPixbuf()
         column.pack_start(render, False)
         column.add_attribute(render, "pixbuf", 0)
@@ -94,7 +95,7 @@ class PeersTab(Tab):
         self.listview.append_column(column)
 
         # Address column
-        column = gtk.TreeViewColumn(_("Address"))
+        column = TreeviewColumnBase(_("Address"))
         render = gtk.CellRendererPixbuf()
         column.pack_start(render, False)
         column.add_attribute(render, "pixbuf", 7)
@@ -110,7 +111,7 @@ class PeersTab(Tab):
         self.listview.append_column(column)
 
         # Client column
-        column = gtk.TreeViewColumn(_("Client"))
+        column = TreeviewColumnBase(_("Client"))
         render = gtk.CellRendererText()
         column.pack_start(render, False)
         column.add_attribute(render, "text", 2)
@@ -123,7 +124,7 @@ class PeersTab(Tab):
         self.listview.append_column(column)
 
         # Progress column
-        column = gtk.TreeViewColumn(_("Progress"))
+        column = TreeviewColumnBase(_("Progress"))
         render = gtk.CellRendererProgress()
         column.pack_start(render, True)
         column.set_cell_data_func(render, cell_data_progress, 8)
@@ -136,10 +137,10 @@ class PeersTab(Tab):
         self.listview.append_column(column)
 
         # Down Speed column
-        column = gtk.TreeViewColumn(_("Down Speed"))
+        column = TreeviewColumnBase(_("Down Speed"))
         render = gtk.CellRendererText()
         column.pack_start(render, False)
-        column.set_cell_data_func(render, cell_data_speed_down, 3)
+        column.set_cell_data_func(render, cell_data_speed, 3)
         column.set_sort_column_id(3)
         column.set_clickable(True)
         column.set_resizable(True)
@@ -149,10 +150,10 @@ class PeersTab(Tab):
         self.listview.append_column(column)
 
         # Up Speed column
-        column = gtk.TreeViewColumn(_("Up Speed"))
+        column = TreeviewColumnBase(_("Up Speed"))
         render = gtk.CellRendererText()
         column.pack_start(render, False)
-        column.set_cell_data_func(render, cell_data_speed_up, 4)
+        column.set_cell_data_func(render, cell_data_speed, 4)
         column.set_sort_column_id(4)
         column.set_clickable(True)
         column.set_resizable(True)

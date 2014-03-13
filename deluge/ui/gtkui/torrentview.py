@@ -277,21 +277,21 @@ class TorrentView(listview.ListView, component.Component):
         self.add_func_column(_("Peers"), funcs.cell_data_peer, [int, int],
                              status_field=["num_peers", "total_peers"],
                              sort_func=seed_peer_column_sort, default=False)
-        self.add_func_column(_("Seeds:Peers"), funcs.cell_data_ratio_seeds_peers, [float],
+        self.add_func_column(_("Seeds:Peers"), funcs.cell_data_ratio, [float],
                              status_field=["seeds_peers_ratio"], default=False)
-        self.add_func_column(_("Down Speed"), funcs.cell_data_speed_down, [float],
+        self.add_func_column(_("Down Speed"), funcs.cell_data_speed, [float],
                              status_field=["download_payload_rate"])
-        self.add_func_column(_("Up Speed"), funcs.cell_data_speed_up, [float],
+        self.add_func_column(_("Up Speed"), funcs.cell_data_speed, [float],
                              status_field=["upload_payload_rate"])
-        self.add_func_column(_("Down Limit"), funcs.cell_data_speed_limit_down, [float],
+        self.add_func_column(_("Down Limit"), funcs.cell_data_speed_limit, [float],
                              status_field=["max_download_speed"], default=False)
-        self.add_func_column(_("Up Limit"), funcs.cell_data_speed_limit_up, [float],
+        self.add_func_column(_("Up Limit"), funcs.cell_data_speed_limit, [float],
                              status_field=["max_upload_speed"], default=False)
         self.add_func_column(_("ETA"), funcs.cell_data_time, [int],
                              status_field=["eta"], sort_func=eta_column_sort)
-        self.add_func_column(_("Ratio"), funcs.cell_data_ratio_ratio, [float],
+        self.add_func_column(_("Ratio"), funcs.cell_data_ratio, [float],
                              status_field=["ratio"], default=False)
-        self.add_func_column(_("Avail"), funcs.cell_data_ratio_avail, [float],
+        self.add_func_column(_("Avail"), funcs.cell_data_ratio, [float],
                              status_field=["distributed_copies"], default=False)
         self.add_func_column(_("Added"), funcs.cell_data_date, [float],
                              status_field=["time_added"], default=False)

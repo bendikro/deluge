@@ -78,33 +78,14 @@ def _t(text):
         text = TRANSLATE[text]
     return _(text)
 
-# Cache the key used to calculate the current value set for the specific cell
-# renderer. This is much cheaper than fetch the current value and test if
-# it's equal.
-func_last_value = {"cell_data_speed_down": None,
-                   "cell_data_speed_up": None,
-                   "cell_data_time": None,
-                   "cell_data_ratio_seeds_peers": None,
-                   "cell_data_ratio_ratio": None,
-                   "cell_data_ratio_avail": None,
-                   "cell_data_date": None,
-                   "cell_data_date_or_never": None,
-                   "cell_data_speed_limit_down": None,
-                   "cell_data_speed_limit_up": None,
-                   "cell_data_trackericon": None,
-                   "cell_data_statusicon": None,
-                   "cell_data_queue": None,
-                   "cell_data_progress": [None, None],
-                   }
-
 def cell_data_statusicon(column, cell, model, row, data):
     """Display text with an icon"""
     try:
         state = model.get_value(row, data)
 
-        if func_last_value["cell_data_statusicon"] == state:
+        if column.cached_cell_renderer_value == state:
             return
-        func_last_value["cell_data_statusicon"] = state
+        column.cached_cell_renderer_value = state
 
         icon = ICON_STATE[state]
 
@@ -146,92 +127,80 @@ def set_icon(icon, cell):
 def cell_data_trackericon(column, cell, model, row, data):
     host = model[row][data]
 
-    if func_last_value["cell_data_trackericon"] == host:
+    if column.cached_cell_renderer_value == host:
         return
     if host:
         if not component.get("TrackerIcons").has(host):
             # Set blank icon while waiting for the icon to be loaded
             set_icon(None, cell)
             component.get("TrackerIcons").fetch(host)
-            func_last_value["cell_data_trackericon"] = None
+            column.cached_cell_renderer_value = None
         else:
             set_icon(component.get("TrackerIcons").get(host), cell)
             # Only set the last value when we have found the icon
-            func_last_value["cell_data_trackericon"] = host
+            column.cached_cell_renderer_value = host
     else:
         set_icon(None, cell)
-        func_last_value["cell_data_trackericon"] = None
+        column.cached_cell_renderer_value = None
 
 def cell_data_progress(column, cell, model, row, data):
     """Display progress bar with text"""
     (value, state_str) = model.get(row, *data)
-    if func_last_value["cell_data_progress"][0] != value:
-        func_last_value["cell_data_progress"][0] = value
+    if column.cached_cell_renderer_value[0] != value:
+        column.cached_cell_renderer_value[0] = value
         cell.set_property("value", value)
 
     textstr = _t(state_str)
     if state_str != "Seeding" and value < 100:
         textstr = textstr + " %.2f%%" % value
 
-    if func_last_value["cell_data_progress"][1] != textstr:
-        func_last_value["cell_data_progress"][1] = textstr
+    if column.cached_cell_renderer_value[1] != textstr:
+        column.cached_cell_renderer_value[1] = textstr
         cell.set_property("text", textstr)
 
 def cell_data_queue(column, cell, model, row, data):
     value = model.get_value(row, data)
 
-    if func_last_value["cell_data_queue"] == value:
+    if column.cached_cell_renderer_value == value:
         return
-    func_last_value["cell_data_queue"] = value
+    column.cached_cell_renderer_value = value
 
     if value < 0:
         cell.set_property("text", "")
     else:
         cell.set_property("text", str(value + 1))
 
-def cell_data_speed(cell, model, row, data, cache_key):
+def cell_data_speed(column, cell, model, row, data):
     """Display value as a speed, eg. 2 KiB/s"""
+    #print "cell_data_speed:", type(column)
+    #print "cell_data_speed:", dir(column)
     try:
         speed = model.get_value(row, data)
     except AttributeError, e:
         print "AttributeError"
         import traceback
         traceback.print_exc()
-    if func_last_value[cache_key] == speed:
+    if column.cached_cell_renderer_value == speed:
         return
-    func_last_value[cache_key] = speed
+    column.cached_cell_renderer_value = speed
 
     speed_str = ""
     if speed > 0:
         speed_str = common.fspeed(speed)
     cell.set_property('text', speed_str)
 
-def cell_data_speed_down(column, cell, model, row, data):
-    """Display value as a speed, eg. 2 KiB/s"""
-    cell_data_speed(cell, model, row, data, "cell_data_speed_down")
-
-def cell_data_speed_up(column, cell, model, row, data):
-    """Display value as a speed, eg. 2 KiB/s"""
-    cell_data_speed(cell, model, row, data, "cell_data_speed_up")
-
-def cell_data_speed_limit(cell, model, row, data, cache_key):
+def cell_data_speed_limit(column, cell, model, row, data):
     """Display value as a speed, eg. 2 KiB/s"""
     speed = model.get_value(row, data)
 
-    if func_last_value[cache_key] == speed:
+    if column.cached_cell_renderer_value == speed:
         return
-    func_last_value[cache_key] = speed
+    column.cached_cell_renderer_value = speed
 
     speed_str = ""
     if speed > 0:
         speed_str = common.fspeed(speed * 1024)
     cell.set_property('text', speed_str)
-
-def cell_data_speed_limit_down(column, cell, model, row, data):
-    cell_data_speed_limit(cell, model, row, data, "cell_data_speed_limit_down")
-
-def cell_data_speed_limit_up(column, cell, model, row, data):
-    cell_data_speed_limit(cell, model, row, data, "cell_data_speed_limit_up")
 
 def cell_data_size(column, cell, model, row, data):
     """Display value in terms of size, eg. 2 MB"""
@@ -250,9 +219,9 @@ def cell_data_peer(column, cell, model, row, data):
 def cell_data_time(column, cell, model, row, data):
     """Display value as time, eg 1m10s"""
     time = model.get_value(row, data)
-    if func_last_value["cell_data_time"] == time:
+    if column.cached_cell_renderer_value == time:
         return
-    func_last_value["cell_data_time"] = time
+    column.cached_cell_renderer_value = time
 
     if time <= 0:
         time_str = ""
@@ -260,31 +229,22 @@ def cell_data_time(column, cell, model, row, data):
         time_str = common.ftime(time)
     cell.set_property('text', time_str)
 
-def cell_data_ratio(cell, model, row, data, cache_key):
+def cell_data_ratio(column, cell, model, row, data):
     """Display value as a ratio with a precision of 3."""
     ratio = model.get_value(row, data)
     # Previous value in cell is the same as for this value, so ignore
-    if func_last_value[cache_key] == ratio:
+    if column.cached_cell_renderer_value == ratio:
         return
-    func_last_value[cache_key] = ratio
+    column.cached_cell_renderer_value = ratio
     cell.set_property('text', "∞" if ratio < 0 else "%.3f" % ratio)
-
-def cell_data_ratio_seeds_peers(column, cell, model, row, data):
-    cell_data_ratio(cell, model, row, data, "cell_data_ratio_seeds_peers")
-
-def cell_data_ratio_ratio(column, cell, model, row, data):
-    cell_data_ratio(cell, model, row, data, "cell_data_ratio_ratio")
-
-def cell_data_ratio_avail(column, cell, model, row, data):
-    cell_data_ratio(cell, model, row, data, "cell_data_ratio_avail")
 
 def cell_data_date(column, cell, model, row, data):
     """Display value as date, eg 05/05/08"""
     date = model.get_value(row, data)
 
-    if func_last_value["cell_data_date"] == date:
+    if column.cached_cell_renderer_value == date:
         return
-    func_last_value["cell_data_date"] = date
+    column.cached_cell_renderer_value = date
 
     date_str = common.fdate(date) if date > 0.0 else ""
     cell.set_property('text', date_str)
@@ -293,9 +253,9 @@ def cell_data_date_or_never(column, cell, model, row, data):
     """Display value as date, eg 05/05/08 or Never"""
     value = model.get_value(row, data)
 
-    if func_last_value["cell_data_date_or_never"] == value:
+    if column.cached_cell_renderer_value == value:
         return
-    func_last_value["cell_data_date_or_never"] = value
+    column.cached_cell_renderer_value = value
 
     date_str = common.fdate(value) if value > 0.0 else _("Never")
     cell.set_property('text', date_str)

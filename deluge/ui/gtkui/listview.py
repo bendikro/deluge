@@ -57,6 +57,11 @@ class ListViewColumnState:
         self.sort = sort
         self.sort_order = sort_order
 
+class TreeviewColumnBase(gtk.TreeViewColumn, object):
+    def __init__(self, title=None, cell_renderer=None, ** args):
+        """ Constructor, see gtk.TreeViewColumn """
+        gtk.TreeViewColumn.__init__(self, title, cell_renderer, ** args)
+        self.cached_cell_renderer_value = None
 
 class ListView:
     """ListView is used to make custom GtkTreeViews.  It supports the adding
@@ -84,7 +89,7 @@ class ListView:
             self.sort_func = None
             self.sort_id = None
 
-    class TreeviewColumn(gtk.TreeViewColumn, object):
+    class TreeviewColumn(TreeviewColumnBase):
         """
             TreeViewColumn does not signal right-click events, and we need them
             This subclass is equivalent to TreeViewColumn, but it signals these events
@@ -93,8 +98,7 @@ class ListView:
         """
 
         def __init__(self, title=None, cell_renderer=None, ** args):
-            """ Constructor, see gtk.TreeViewColumn """
-            gtk.TreeViewColumn.__init__(self, title, cell_renderer, ** args)
+            TreeviewColumnBase.__init__(self, title, cell_renderer, **args)
             label = gtk.Label(title)
             self.set_widget(label)
             label.show()
@@ -538,7 +542,7 @@ class ListView:
         # Re-create the menu item because of the new column
         self.create_checklist_menu()
 
-        return True
+        return column
 
     def add_text_column(self, header, col_type=str, hidden=False, position=None,
                         status_field=None, sortid=0, column_type="text",
@@ -584,11 +588,11 @@ class ListView:
         """Add a progress column to the listview."""
 
         render = gtk.CellRendererProgress()
-        self.add_column(header, render, col_types, hidden, position,
-                        status_field, sortid, function=function,
-                        column_type=column_type, value=0, text=1,
-                        tooltip=tooltip, default=default)
-
+        column = self.add_column(header, render, col_types, hidden, position,
+                                 status_field, sortid, function=function,
+                                 column_type=column_type, value=0, text=1,
+                                 tooltip=tooltip, default=default)
+        column.cached_cell_renderer_value = [None, None]
         return True
 
     def add_texticon_column(self, header, col_types=[str, str], sortid=1,

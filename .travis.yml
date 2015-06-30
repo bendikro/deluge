@@ -4,9 +4,9 @@ python:
     - "2.7"
 
 # Cache packages download with apt
-cache:
-  directories:
-    - $HOME/.pip-cache/
+#cache:
+#  directories:
+#    - $HOME/.pip-cache/
 
 before_install:
   - lsb_release -a
@@ -24,7 +24,7 @@ install:
 
 env:
   global:
-    - PIP_DOWNLOAD_CACHE=$HOME/.pip-cache/
+ #   - PIP_DOWNLOAD_CACHE=$HOME/.pip-cache/
     - APTPACKAGES="python-libtorrent"
     - APTPACKAGES_GTKUI="python-gobject python-glade2"
   matrix:
@@ -46,8 +46,11 @@ virtualenv:
 before_script:
   - export PYTHONPATH=$PYTHONPATH:$PWD
   - python -c "import libtorrent as lt; print lt.version"
-  - export DISPLAY=:99.0
+#  - export DISPLAY=:99.0
 #  - sh -e /etc/init.d/xvfb start
 
 script:
+  - bash -c "echo $DISPLAY"
+  - export DISPLAY=:99.0
+  - bash -c "echo $DISPLAY"
   - tox -e $TOX_ENV

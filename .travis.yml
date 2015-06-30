@@ -20,7 +20,8 @@ before_install:
 install:
   - bash -c "echo $APTPACKAGES"
   - sudo apt-get install $APTPACKAGES
-  - pip install "tox>=1.8" --download-cache $HOME/.pip-cache
+  - pip install "tox>=1.8"
+#  - pip install "tox>=1.8" --download-cache $HOME/.pip-cache
 
 env:
   global:

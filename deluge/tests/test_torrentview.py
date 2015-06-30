@@ -9,7 +9,8 @@ from . import common
 from .basetest import BaseTestCase
 
 import os
-print "DISPLAY:", os.environ['DISPLAY']
+print "os.environ:", os.environ.keys()
+print "DISPLAY:", os.environ.get('DISPLAY', None)
 
 libs_available = True
 # Allow running other tests without GTKUI dependencies available

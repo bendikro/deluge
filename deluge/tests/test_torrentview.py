@@ -8,6 +8,9 @@ from deluge.configmanager import ConfigManager
 from . import common
 from .basetest import BaseTestCase
 
+import os
+print "DISPLAY:", os.environ['DISPLAY']
+
 libs_available = True
 # Allow running other tests without GTKUI dependencies available
 try:

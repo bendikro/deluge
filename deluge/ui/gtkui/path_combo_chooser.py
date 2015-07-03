@@ -1009,7 +1009,7 @@ class PathAutoCompleter(object):
             self.completion_popup.popdown()
 
 
-class PathChooserComboBox(Gtk.HBox, StoredValuesPopup, GObject.GObject):
+class PathChooserComboBox(Gtk.Box, StoredValuesPopup, GObject.GObject):
 
     __gsignals__ = {
         "list-value-added": (GObject.SignalFlags.RUN_FIRST, None, (object, )),
@@ -1027,10 +1027,11 @@ class PathChooserComboBox(Gtk.HBox, StoredValuesPopup, GObject.GObject):
     }
 
     def __init__(self, max_visible_rows=20, auto_complete=True, use_completer_popup=True):
-        Gtk.HBox.__init__(self)
+        Gtk.Box.__init__(self)
         # gobject.GObject.__init__(self)
         # GObject.GObject.__init__(self)
         GObject.GObject.__init__(self)
+        print("HELLO!")
         self._stored_values_popping_down = False
         self.filechooser_visible = True
         self.filechooser_enabled = True

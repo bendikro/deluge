@@ -55,4 +55,4 @@ script:
   - export DISPLAY=:99.0
   - bash -c "echo $DISPLAY"
   - python -c "import os; print os.environ.get('DISPLAY', None)"
-  - tox -e $TOX_ENV
+  - DISPLAY=:99.0 tox -e $TOX_ENV

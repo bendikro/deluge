@@ -27,7 +27,7 @@ env:
   global:
     - PIP_DOWNLOAD_CACHE=$HOME/.pip-cache/
     - APTPACKAGES="python-libtorrent"
-    - APTPACKAGES_GTKUI="python-gobject python-glade2 python-gtk2"
+    - APTPACKAGES_GTKUI="python-gobject"
     - DISPLAY=:99.0
   matrix:
 #    - TOX_ENV=pydef

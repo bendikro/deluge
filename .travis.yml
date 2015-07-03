@@ -4,9 +4,9 @@ python:
     - "2.7"
 
 # Cache packages download with apt
-#cache:
-#  directories:
-#    - $HOME/.pip-cache/
+cache:
+  directories:
+    - $HOME/.pip-cache/
 
 before_install:
   - lsb_release -a
@@ -20,14 +20,13 @@ before_install:
 install:
   - bash -c "echo $APTPACKAGES"
   - sudo apt-get install $APTPACKAGES
-  - pip install "tox>=1.8"
-#  - pip install "tox>=1.8" --download-cache $HOME/.pip-cache
+  - pip install "tox>=1.8" --download-cache $HOME/.pip-cache
 
 env:
   global:
     - PIP_DOWNLOAD_CACHE=$HOME/.pip-cache/
     - APTPACKAGES="python-libtorrent"
-    - APTPACKAGES_GTKUI="python-gobject libgtk-3-0 libgtk-3-dev"
+    - APTPACKAGES_GTKUI="python-gobject python-cairo libgtk-3-0 libgtk-3-dev"
     - DISPLAY=:99.0
   matrix:
 #    - TOX_ENV=pydef

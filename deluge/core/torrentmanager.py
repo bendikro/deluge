@@ -709,16 +709,8 @@ class TorrentManager(component.Component):
         filepath = os.path.join(get_config_dir(), "state", "torrents.state")
         filepath_tmp = filepath + ".tmp"
         filepath_bak = filepath + ".bak"
+        filepath_bak2 = filepath + ".bak.bak"
 
-        try:
-            os.remove(filepath_bak)
-        except OSError:
-            pass
-        try:
-            log.debug("Creating backup of state at: %s", filepath_bak)
-            os.rename(filepath, filepath_bak)
-        except OSError, ex:
-            log.error("Unable to backup %s to %s: %s", filepath, filepath_bak, ex)
         try:
             log.info("Saving the state at: %s", filepath)
             state_file = open(filepath_tmp, "wb", 0)
@@ -726,14 +718,67 @@ class TorrentManager(component.Component):
             state_file.flush()
             os.fsync(state_file.fileno())
             state_file.close()
-            os.rename(filepath_tmp, filepath)
         except IOError:
             log.error("Unable to save %s: %s", filepath, ex)
+            return True
+
+        # Verify newly written state file
+        state_verified = False
+        try:
+            state_file = open(filepath_tmp, "rb")
+            state = cPickle.load(state_file)
+            state_file.close()
+            state_verified = True
+        except (EOFError, IOError, Exception, cPickle.UnpicklingError), e:
+            log.warning("Error occured while loading written state file: %s", e)
+
+        if state_verified is False:
+            log.warning("Failed to verify saved state file %s.", filepath_tmp)
+            try:
+                os.remove(filepath_tmp)
+            except OSError, ex:
+                pass
+            return True
+
+        try:
+            # This would only happen due to previous bad shutdown while saving
+            if os.path.isfile(filepath_bak2):
+                log.warning("Stray backup file found!: %s", filepath_bak2)
+                timestamp = datetime.datetime.now().replace(microsecond=0).isoformat().replace(':', '-')
+                filepath_bak_archive = "%s.%s" % (filepath_bak, timestamp)
+                filepath_bak2_archive = "%s.%s" % (filepath_bak2, timestamp)
+                os.rename(filepath_bak2, filepath_bak2_archive)
+                log.warning("Archiving backup file to: %s", filepath_bak2_archive)
+                if os.path.isfile(filepath_bak):
+                    os.rename(filepath_bak, filepath_bak_archive)
+                    log.warning("Archiving backup file to: %s", filepath_bak_archive)
+            elif os.path.isfile(filepath_bak):
+                os.rename(filepath_bak, filepath_bak2)
+        except OSError, ex:
+            log.warning("Error occured when handling state backup: %s", ex)
+            # What to do here?
+        try:
+            log.debug("Creating backup of state at: %s", filepath_bak)
+            os.rename(filepath, filepath_bak)
+        except OSError, ex:
+            log.error("Unable to backup %s to %s: %s", filepath, filepath_bak, ex)
+            return True
+        try:
+            os.rename(filepath_tmp, filepath)
+        except OSError, ex:
+            log.error("Failed to set new state file %s: %s", filepath, ex)
             if os.path.isfile(filepath_bak):
                 log.info("Restoring backup of state from: %s", filepath_bak)
                 os.rename(filepath_bak, filepath)
+            return True
 
-        # We return True so that the timer thread will continue
+        # Finally delete the old bak file
+        if os.path.isfile(filepath_bak2):
+            try:
+                os.remove(filepath_bak2)
+            except OSError, ex:
+                log.warning("Error occured while removing backup file %s: %s", filepath_bak2, ex)
+        # Always return True so that the timer thread will continue
         return True
 
     def save_resume_data(self, torrent_ids=None):
@@ -799,26 +844,35 @@ class TorrentManager(component.Component):
         self.resume_data = {}
 
         try:
-            os.remove(filepath_bak)
-        except OSError:
-            pass
-        try:
-            log.debug("Creating backup of fastresume at: %s", filepath_bak)
-            os.rename(filepath, filepath_bak)
-        except OSError, ex:
-            log.error("Unable to backup %s to %s: %s", filepath, filepath_bak, ex)
-        try:
             log.info("Saving the fastresume at: %s", filepath)
             fastresume_file = open(filepath_tmp, "wb", 0)
             fastresume_file.write(lt.bencode(resume_data))
             fastresume_file.flush()
             os.fsync(fastresume_file.fileno())
             fastresume_file.close()
-            os.rename(filepath_tmp, filepath)
         except IOError:
             log.error("Unable to save %s: %s", filepath, ex)
+            return
+
+        # Presume fastresume file was successfully saved
+        try:
             if os.path.isfile(filepath_bak):
-                log.info("Restoring backup of fastresume from: %s", filepath_bak)
+                os.remove(filepath_bak)
+        except OSError, err:
+            log.error("Failed to remove backup file %s: %s", filepath_bak, ex)
+
+        try:
+            log.debug("Creating backup of fastresume at: %s", filepath_bak)
+            os.rename(filepath, filepath_bak)
+        except OSError, ex:
+            log.error("Unable to backup %s to %s: %s", filepath, filepath_bak, ex)
+
+        try:
+            os.rename(filepath_tmp, filepath)
+        except OSError, ex:
+            log.error("Failed to set new fastresume file %s: %s", filepath, ex)
+            if os.path.isfile(filepath_bak):
+                log.info("Restoring backup of state from: %s", filepath_bak)
                 os.rename(filepath_bak, filepath)
 
     def remove_empty_folders(self, torrent_id, folder):

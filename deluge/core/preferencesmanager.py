@@ -162,9 +162,13 @@ class PreferencesManager(component.Component):
         # Only set the listen ports if random_port is not true
         if self.config["random_port"] is not True:
             log.debug("listen port range set to %s-%s", value[0], value[1])
-            self.session.listen_on(
-                value[0], value[1], str(self.config["listen_interface"])
-            )
+            try:
+                self.session.listen_on(
+                    value[0], value[1], str(self.config["listen_interface"])
+                )
+            except RuntimeError as ex:
+                log.error("Error occured when setting listen ports (%d, %d) and address (%s): %s",
+                          value[0], value[1], str(self.config["listen_interface"]), ex)
 
     def _on_set_listen_interface(self, key, value):
         # Call the random_port callback since it'll do what we need

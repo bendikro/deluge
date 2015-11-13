@@ -116,10 +116,12 @@ class _UI(object):
 
 
 class UI:
+
     def __init__(self, options, args, ui_args):
         log = logging.getLogger(__name__)
         log.debug("UI init..")
-
+        self.args = args
+        self.ui_args = ui_args
         # Setup gettext
         deluge.common.setup_translations()
 
@@ -129,28 +131,29 @@ class UI:
         config = deluge.configmanager.ConfigManager("ui.conf", DEFAULT_PREFS)
 
         if not options.ui:
-            selected_ui = config["default_ui"]
+            self.selected_ui = config["default_ui"]
         else:
-            selected_ui = options.ui
-
-        setproctitle("deluge")
+            self.selected_ui = options.ui
 
         config.save()
         del config
 
+    def run(self):
+        log = logging.getLogger(__name__)
+        setproctitle("deluge")
         try:
-            if selected_ui == "gtk":
+            if self.selected_ui == "gtk":
                 log.info("Starting GtkUI..")
                 from deluge.ui.gtkui.gtkui import GtkUI
-                GtkUI(args)
-            elif selected_ui == "web":
+                GtkUI(self.args)
+            elif self.selected_ui == "web":
                 log.info("Starting WebUI..")
                 from deluge.ui.web.web import WebUI
-                WebUI(args)
-            elif selected_ui == "console":
+                WebUI(self.args)
+            elif self.selected_ui == "console":
                 log.info("Starting ConsoleUI..")
                 from deluge.ui.console.main import ConsoleUI
-                ConsoleUI(ui_args)
+                ConsoleUI(self.ui_args)
         except ImportError as ex:
             import traceback
             error_type, error_value, tb = sys.exc_info()
@@ -158,9 +161,9 @@ class UI:
             last_frame = stack[-1]
             if last_frame[0] == __file__:
                 log.error("Unable to find the requested UI: %s.  Please select a different UI with the '-u' option \
-                          or alternatively use the '-s' option to select a different default UI.", selected_ui)
+                          or alternatively use the '-s' option to select a different default UI.", self.selected_ui)
             else:
                 log.exception(ex)
-                log.error("There was an error whilst launching the request UI: %s", selected_ui)
+                log.error("There was an error whilst launching the request UI: %s", self.selected_ui)
                 log.error("Look at the traceback above for more information.")
             sys.exit(1)

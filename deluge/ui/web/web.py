@@ -56,9 +56,6 @@ class Web(_UI):
         group.add_option("-p", "--port", dest="port", type="int",
                          help="Sets the port to be used for the webserver",
                          action="store", default=None)
-        group.add_option("--profile", dest="profile",
-                         help="Profile the web server code",
-                         action="store_true", default=False)
         try:
             import OpenSSL
             assert OpenSSL.__version__
@@ -131,19 +128,8 @@ class Web(_UI):
             self.server.start()
 
         if self.options.profile:
-            import cProfile
-            profiler = cProfile.Profile()
-            profile_output = get_config_dir("delugeweb.profile")
-
-            # Twisted catches signals to terminate
-            def save_profile_stats():
-                profiler.dump_stats(profile_output)
-                print("Profile stats saved to %s" % profile_output)
-
-            from twisted.internet import reactor
-            reactor.addSystemEventTrigger("before", "shutdown", save_profile_stats)
-            print("Running with profiler...")
-            profiler.runcall(run_server)
+            from deluge.common import profile
+            profile("delugeweb.profile", run_server)
         else:
             run_server()
 

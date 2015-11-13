@@ -971,3 +971,25 @@ def unicode_argv():
         encoding = encoding or "utf-8"
 
         return [arg.decode(encoding) for arg in sys.argv]
+
+
+def profile(profile_fname, run_func, func_args=None):
+    import cProfile
+    from deluge.configmanager import get_config_dir
+    profiler = cProfile.Profile()
+    profile_output = get_config_dir(profile_fname)
+
+    # Twisted catches signals to terminate
+    def save_profile_stats():
+        profiler.dump_stats(profile_output)
+        print("Profile stats saved to %s" % profile_output)
+
+    from twisted.internet import reactor
+    reactor.addSystemEventTrigger("before", "shutdown", save_profile_stats)
+    print("Running with profiler...")
+    if func_args is not None:
+        if not type(func_args) is tuple:
+            func_args = (func_args,)
+        profiler.runcall(run_func, *func_args)
+    else:
+        profiler.runcall(run_func)

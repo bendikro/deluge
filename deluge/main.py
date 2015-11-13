@@ -62,6 +62,7 @@ def start_ui():
                       help="Sets the log level to 'none', this is the same as `-L none`")
     parser.add_option("-r", "--rotate-logs",
                       help="Rotate logfiles.", action="store_true", default=False)
+    parser.add_option("--profile", dest="profile", action="store_true", default=False, help="Profiles the UI")
 
     # Get the options and args from the OptionParser
     (options, args) = parser.parse_args(deluge.common.unicode_argv()[1:])
@@ -108,9 +109,37 @@ def start_ui():
     log.debug("args: %s", args)
     log.debug("ui_args: %s", args)
 
+    print("options: %s, args: %s" % (options, args))
+
     from deluge.ui.ui import UI
-    log.info("Starting ui..")
-    UI(options, args, options.args)
+    ui = UI(options, args, options.args)
+    print("UI created")
+
+    def run_ui():
+        log.info("Starting ui..")
+        try:
+            ui.run()
+        except Exception as ex:
+            log.exception(ex)
+            sys.exit(1)
+
+    if options.profile:
+        import cProfile
+        profiler = cProfile.Profile()
+        print("UI:", ui.selected_ui)
+        profile_output = deluge.configmanager.get_config_dir("deluge-%s.profile" % ui.selected_ui)
+
+        # Twisted catches signals to terminate
+        def save_profile_stats():
+            profiler.dump_stats(profile_output)
+            print("Profile stats saved to %s" % profile_output)
+
+        from twisted.internet import reactor
+        reactor.addSystemEventTrigger("before", "shutdown", save_profile_stats)
+        print("Running with profiler...")
+        profiler.runcall(run_ui)
+    else:
+        run_ui()
 
 
 def start_daemon():
@@ -231,18 +260,7 @@ def start_daemon():
                 os.remove(options.pidfile)
 
     if options.profile:
-        import cProfile
-        profiler = cProfile.Profile()
-        profile_output = deluge.configmanager.get_config_dir("deluged.profile")
-
-        # Twisted catches signals to terminate
-        def save_profile_stats():
-            profiler.dump_stats(profile_output)
-            print("Profile stats saved to %s" % profile_output)
-
-        from twisted.internet import reactor
-        reactor.addSystemEventTrigger("before", "shutdown", save_profile_stats)
-        print("Running with profiler...")
-        profiler.runcall(run_daemon, options)
+        from common import profile
+        profile("deluged.profile", run_daemon, func_args=options)
     else:
         run_daemon(options)

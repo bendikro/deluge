@@ -19,11 +19,14 @@ import gtk
 from twisted.internet import gtk2reactor
 from twisted.internet.error import ReactorAlreadyInstalledError
 
+print "GTKTUI"
+
 try:
     # Install twisted reactor, before any other modules import reactor.
     reactor = gtk2reactor.install()
-except ReactorAlreadyInstalledError:
+except ReactorAlreadyInstalledError as ex:
     # Running unit tests so trial already installed a rector
+    print "EXCEPTION:", ex
     pass
 
 import deluge.common
@@ -259,7 +262,7 @@ class GtkUI(object):
         from twisted.internet.task import LoopingCall
         rpc_stats = LoopingCall(self.print_rpc_stats)
         rpc_stats.start(10)
-
+        print("reactor:", reactor)
         reactor.callWhenRunning(self._on_reactor_start)
 
         # Initialize gdk threading

@@ -102,8 +102,11 @@ class AlertManager(component.Component):
         num_alerts = len(alerts)
         if log.isEnabledFor(logging.DEBUG):
             log.debug("Alerts queued: %s", num_alerts)
-        if num_alerts > 0.9 * self.alert_queue_size:
-            log.warning("Warning total alerts queued, %s, passes 90%% of queue size.", num_alerts)
+        if num_alerts > 0.5 * self.alert_queue_size:
+            log.warning("Warning total alerts queued, %s, surpasses 50%% of queue size (%s).", num_alerts, self.alert_queue_size)
+            new_size = max(self.alert_queue_size, num_alerts) * 2
+            self.set_alert_queue_size(new_size)
+            log.info("Increasing alert queue size to %s.", new_size)
 
         # Loop through all alerts in the queue
         for alert in alerts:

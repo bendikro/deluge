@@ -212,9 +212,12 @@ build_libtorrent = True
 try:
     from deluge._libtorrent import lt
 except ImportError:
-    build_libtorrent = True
+    build_libtorrent = False
+    print "SKROT"
 else:
     build_libtorrent = False
+    print "SKROT2"
+
 
 if build_libtorrent:
     got_libtorrent = False

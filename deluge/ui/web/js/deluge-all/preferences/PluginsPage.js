@@ -241,6 +241,7 @@ Deluge.preferences.Plugins = Ext.extend(Ext.Panel, {
     },
 
     onPreferencesShow: function() {
+        if (!deluge.client.core) return;
         this.updatePlugins();
     },
 

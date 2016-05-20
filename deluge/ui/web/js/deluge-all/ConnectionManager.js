@@ -264,10 +264,12 @@ Deluge.ConnectionManager = Ext.extend(Ext.Window, {
             Ext.MessageBox.confirm(_('Change Default Password'),
                 _('We recommend changing the default password.<br><br>Would you like to change it now?'),
                 function(res) {
-                    this.checkConnected();
                     if (res == 'yes') {
                         deluge.preferences.show();
                         deluge.preferences.selectPage('Interface');
+                        deluge.preferences.on('hide', function(res) {
+                            this.checkConnected();
+                        }, this);
                     }
                     deluge.client.web.set_config({first_login: false});
                 }, this);

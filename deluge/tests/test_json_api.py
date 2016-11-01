@@ -30,6 +30,9 @@ from .daemon_base import DaemonBase
 
 common.disable_new_release_check()
 
+import twisted.internet.base
+twisted.internet.base.DelayedCall.debug = True
+
 
 class JSONBase(BaseTestCase, DaemonBase):
 

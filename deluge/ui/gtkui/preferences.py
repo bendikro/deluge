@@ -320,7 +320,7 @@ class Preferences(component.Component):
 
             # Display workaround for single proxy in libtorrent >v0.16
             try:
-                lt_single_proxy = component.get("PreferencesManager").LT_SINGLE_PROXY
+                lt_single_proxy = component.get("SessionProxy").preferencesmanager.LT_SINGLE_PROXY
             except AttributeError:
                 lt_single_proxy = False
 

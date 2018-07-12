@@ -11,7 +11,7 @@ from __future__ import division, unicode_literals
 
 import logging
 import os
-from base64 import b64encode
+from base64 import b64decode, b64encode
 from xml.sax.saxutils import escape as xml_escape
 from xml.sax.saxutils import unescape as xml_unescape
 
@@ -236,6 +236,7 @@ class AddTorrentDialog(component.Component):
                     info = TorrentInfo(metadata=metadata)
                     self.files[info_hash] = info.files
                     self.infos[info_hash] = info.filedata
+                    self.prepare_file_store(info.files)
                 else:
                     log.info('Unable to fetch metadata for magnet: %s', uri)
 

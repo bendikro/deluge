@@ -793,14 +793,15 @@ class AddTorrentDialog(component.Component):
             if options is not None:
                 options['file_priorities'] = file_priorities
 
-            if deluge.common.is_magnet(filename):
-                client.core.add_torrent_magnet(filename, options)
-            else:
+            if self.infos[torrent_id]:
                 torrents_to_add.append((
                     os.path.split(filename)[-1],
                     b64encode(self.infos[torrent_id]),
                     options,
                 ))
+            elif deluge.common.is_magnet(filename):
+                client.core.add_torrent_magnet(filename, options)
+
             row = self.torrent_liststore.iter_next(row)
 
         def on_torrents_added(errors):

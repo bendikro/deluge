@@ -513,9 +513,6 @@ class Torrent(object):
                     self.update_state()
                     break
 
-        # Ensure stored options are in sync in case file_priorities were faulty (old state?).
-        self.options['file_priorities'] = self.handle.file_priorities()
-
         # Set the first/last priorities if needed.
         if self.options['prioritize_first_last_pieces']:
             self.set_prioritize_first_last_pieces(self.options['prioritize_first_last_pieces'])

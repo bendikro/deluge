@@ -11,7 +11,7 @@ from base64 import b64encode
 from hashlib import sha1 as sha
 
 import pytest
-from twisted.internet import defer, reactor
+from twisted.internet import defer, reactor, task
 from twisted.internet.error import CannotListenError
 from twisted.python.failure import Failure
 from twisted.web.http import FORBIDDEN
@@ -88,6 +88,8 @@ class CoreTestCase(BaseTestCase):
         self.rpcserver = RPCServer(listen=False)
         self.core = Core()
         self.core.config.config['lsd'] = False
+        self.clock = task.Clock()
+        self.core.torrentmanager.callLater = self.clock.callLater
         self.listen_port = 51242
         return component.start().addCallback(self.start_web_server)
 
@@ -209,6 +211,16 @@ class CoreTestCase(BaseTestCase):
         options = {}
         torrent_id = yield self.core.add_torrent_magnet(uri, options)
         self.assertEqual(torrent_id, info_hash)
+
+    def test_prefetch_metadata_existing(self):
+        magnet = 'magnet:?xt=urn:btih:ab570cdd5a17ea1b61e970bb72047de141bce173'
+        expected = ('ab570cdd5a17ea1b61e970bb72047de141bce173', '')
+        def on_cb(result):
+            self.assertEqual(result, expected)
+        d = self.core.prefetch_magnet_metadata(magnet).addCallback(on_cb)
+        d2 = self.core.prefetch_magnet_metadata(magnet).addCallback(on_cb)
+        self.clock.advance(30)
+        return d2
 
     @defer.inlineCallbacks
     def test_remove_torrent(self):

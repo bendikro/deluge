@@ -419,11 +419,15 @@ class Core(component.Component):
             The metadata is base64 encoded.
 
         """
-        def on_metadata(result):
+        def on_metadata(result, result_d):
             torrent_id, metadata = result
+            result_d.callback((torrent_id, b64encode(metadata)))
             return torrent_id, b64encode(metadata)
 
-        return self.torrentmanager.prefetch_metadata(magnet, timeout).addCallback(on_metadata)
+        d = self.torrentmanager.prefetch_metadata(magnet, timeout)
+        result_d = defer.Deferred()
+        d.addBoth(on_metadata, result_d)
+        return result_d
 
     @export
     def add_torrent_file(self, filename, filedump, options):

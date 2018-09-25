@@ -215,12 +215,14 @@ class CoreTestCase(BaseTestCase):
     def test_prefetch_metadata_existing(self):
         magnet = 'magnet:?xt=urn:btih:ab570cdd5a17ea1b61e970bb72047de141bce173'
         expected = ('ab570cdd5a17ea1b61e970bb72047de141bce173', '')
+
         def on_cb(result):
             self.assertEqual(result, expected)
+
         d = self.core.prefetch_magnet_metadata(magnet).addCallback(on_cb)
         d2 = self.core.prefetch_magnet_metadata(magnet).addCallback(on_cb)
         self.clock.advance(30)
-        return d2
+        return defer.DeferredList([d, d2])
 
     @defer.inlineCallbacks
     def test_remove_torrent(self):
